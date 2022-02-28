@@ -39,7 +39,7 @@ def load_images(
     Returns
     -------
     tuple
-        2-tuple containing np.ndarray of image numbers and list of np.ndarray objects representing images
+        2-tuple containing np.ndarray of image numbers and N x Height x Width np.ndarray representing images
 
     Raises
     ------
@@ -64,8 +64,9 @@ def load_images(
         img_nums = np.array(manual_img_nums)
     if len(imgs) != len(img_nums):
         raise ValueError(f'Length of manual_img_nums ({len(manual_img_nums)}) must match number of images loaded ({len(imgs)}).')
+    imgs = np.stack(imgs)
     return img_nums, imgs
-    
+
 # Define function to save points layers as csv
 def save_pts(viewer, layer_name, save_dir_path, csv_name=None):
     layer = viewer.layers[layer_name]
