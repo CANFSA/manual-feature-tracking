@@ -65,6 +65,7 @@ def load_images(
     if len(imgs) != len(img_nums):
         raise ValueError(f'Length of manual_img_nums ({len(manual_img_nums)}) must match number of images loaded ({len(imgs)}).')
     return img_nums, imgs
+    
 # Define function to save points layers as csv
 def save_pts(viewer, layer_name, save_dir_path, csv_name=None):
     layer = viewer.layers[layer_name]
