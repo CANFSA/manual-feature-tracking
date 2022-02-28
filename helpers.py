@@ -67,6 +67,54 @@ def load_images(
     imgs = np.stack(imgs)
     return img_nums, imgs
 
+def process_images(
+    imgs,
+    process='div_by_pre'
+):
+    """Process images by dividing by preceeding image, dividing by first image, subtracting preceeding image, or subtracting first image.
+
+    Parameters
+    ----------
+    imgs : np.ndarray
+        N x Height x Width np.ndarray representing images to be processed
+    process : str, optional
+        String corresponding to processing method; must be one of ['div_by_pre', 'div_by_first', 'sub_pre', 'sub_first'], by default 'div_by_pre'
+
+    Returns
+    -------
+    np.ndarray
+        N x Height x Width array representing processed images
+
+    Raises
+    ------
+    ValueError
+        If process not in ['div_by_pre', 'div_by_first', 'sub_pre', 'sub_first']
+    """
+    if process == 'sub_pre':
+        processed_imgs = [
+            imgs[n, :, :] - imgs[n - 1, :, :] for n in range(1, imgs.shape[0])
+        ]
+        processed_imgs.insert(0, np.zeros_like(processed_imgs[0]))
+    elif process == 'sub_first':
+        processed_imgs = [
+            imgs[n, :, :] - imgs[0, :, :] for n in range(1, imgs.shape[0])
+        ]
+        processed_imgs.insert(0, np.zeros_like(processed_imgs[0]))
+    elif process == 'div_by_pre':
+        processed_imgs = [
+            imgs[n, :, :] / imgs[n - 1, :, :] for n in range(1, imgs.shape[0])
+        ]
+        processed_imgs.insert(0, np.zeros_like(processed_imgs[0]))
+    elif process == 'div_by_first':
+        processed_imgs = [
+            imgs[n, :, :] / imgs[0, :, :] for n in range(1, imgs.shape[0])
+        ]
+        processed_imgs.insert(0, np.zeros_like(processed_imgs[0]))
+    else:
+        raise ValueError(f"Processing routine {process} not recognized; process must be 'sub_pre', 'sub_first', 'div_by_pre', or 'div_by_first'.")
+    processed_imgs = np.stack(processed_imgs)
+    return processed_imgs
+
 # Define function to save points layers as csv
 def save_pts(viewer, layer_name, save_dir_path, csv_name=None):
     layer = viewer.layers[layer_name]
