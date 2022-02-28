@@ -115,21 +115,43 @@ def process_images(
     processed_imgs = np.stack(processed_imgs)
     return processed_imgs
 
-# Define function to save points layers as csv
-def save_pts(viewer, layer_name, save_dir_path, csv_name=None):
+def save_points(viewer, layer_name, save_dir_path=None, csv_name=None):
+    """Save napari points layer as a CSV.
+
+    Parameters
+    ----------
+    viewer : napari.Viewer
+        napari Viewer object where points layer exists
+    layer_name : str
+        Name of points layer as labeled in napari viewer
+    save_dir_path : str, optional
+        Path to directory where CSV will be saved; if None, will be saved in current working directory, by default None
+    csv_name : str, optional
+        Name for CSV file; if None, will use Points layer name with spaces replaced by hyphens, by default None
+
+    Raises
+    ------
+    ValueError
+        If layer_name is not a napari Points layer
+    """
     layer = viewer.layers[layer_name]
     if not isinstance(layer, napari.layers.points.points.Points):
         raise ValueError(f'{layer_name} is not an active napari Points layer.')
-    # Make sure save_dir_path is a Path object
-    save_dir_path = Path(save_dir_path)
+    if save_dir_path is not None:
+        save_dir_path = Path(save_dir_path)
+    else:
+        # Set save_dir_path as current working directory (location of the notebook)
+        save_dir_path = Path.cwd()
     if not save_dir_path.is_dir():
         save_dir_path.mkdir(parents=True)
     if csv_name is None:
         csv_name = layer.name
+        csv_name = csv_name.replace(' ', '-')
     csv_path = Path(f'{save_dir_path}/{csv_name}.csv')
+    csv_path = csv_path.resolve()
     if csv_path.exists():
-        print(f'{layer.name}.csv already exists.')
+        print(f'File already exists: {csv_path}')
     else:
         layer.save(csv_path)
-        print(f'{layer.name}.csv saved.')
+        print(f'CSV saved: {csv_path}')
 
