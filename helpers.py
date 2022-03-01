@@ -155,3 +155,21 @@ def save_points(viewer, layer_name, save_dir_path=None, csv_name=None):
         layer.save(csv_path)
         print(f'CSV saved: {csv_path}')
 
+def load_points(csv_path):
+    """Load points data from a CSV file to be added to a napari viewer.
+
+    Parameters
+    ----------
+    csv_path : str or Path
+        Path to a CSV file containing Points layer data
+
+    Returns
+    -------
+    tuple
+        2-tuple containing CSV name and points data in an array of coordinates (slices, row, column) that can be read by napari.add_points()
+    """
+    csv_path = Path(csv_path)
+    csv_name = csv_path.stem
+    points_data = napari.utils.io.csv_to_layer_data(csv_path)[0]
+    return csv_name, points_data
+
