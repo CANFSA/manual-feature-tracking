@@ -1,0 +1,5 @@
+imageio>=2.9.0
+jupyter>=1.0.0
+numpy>=1.20.2
+pandas>=1.2.4
+scikit-image>=0.19.2
