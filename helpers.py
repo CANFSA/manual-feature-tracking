@@ -48,6 +48,7 @@ def load_images(
     """
     img_dir = Path(img_dir_path)
     img_fns = [fn for fn in img_dir.glob(f'*{file_suffix}')]
+    img_fns.sort()
     if start is None:
         start = 0
     if stop is None:
