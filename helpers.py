@@ -209,6 +209,62 @@ def rescale_contrast(
         imgs_adj = util.img_as_ubyte(imgs_adj)
     return imgs_adj
 
+def save_images(
+    save_dir_path,
+    imgs,
+    start=0,
+    stop=None,
+    step=1,
+    num_offset=0
+):
+    """Save 3D array of images as directory of 2D images, especially
+    after processing.
+
+    Parameters
+    ----------
+    save_dir_path : str or Path
+        Path to directory where images will be saved. Directory must not
+        already exist, as a precaution for overwriting data accidentally.
+    imgs : np.ndarray
+        3xMxN NumPy array representing images along axis 0, rows along axis 1,
+        columns along axis 2
+    start : int, optional
+        Index of imgs where images will begin for saving, by default 0
+    stop : int or None, optional
+        Index of imgs where images will stop for saving. Passing None will
+        stop saving at end of array. Defaults to None.
+    step : int, optional
+        Step size between saved images, by default 1 (every image)
+    num_offset : int, optional
+        Additional offset for image index when saving. Iterating index will
+        be added to start to become name of saved images.
+
+    Raises
+    ------
+    ValueError
+        Raises ValueError if save_dir_path already exists
+    """
+    save_dir_path = Path(save_dir_path)
+    if save_dir_path.exists():
+        raise ValueError(
+            'Directory already exists. Delete directory or change save_dir_path'
+        )
+    else:
+        save_dir_path.mkdir(parents=True)
+    if stop is None:
+        stop = imgs.shape[0]
+    print('Saving images...')
+    for i in range(start, stop, step):
+        img = imgs[i, :, :]
+        # Save image with number adjusted by start offset and leading zeros
+        # corresponding to length of stopping image number
+        save_path = save_dir_path / (
+            f'{str(i + num_offset).zfill(len(str(stop)))}.tif'
+        )
+        iio.imwrite(save_path, img)
+    print(f'{i - start + num_offset} image(s) saved to:')
+    print(save_dir_path.absolute())
+
 def save_points(viewer, layer_name, save_dir_path=None, csv_name=None):
     """Save napari points layer as a CSV.
 
