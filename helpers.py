@@ -159,6 +159,56 @@ def process_images(imgs, method='div_by_pre', file_type='.tif'):
     imgs_proc = np.stack(imgs_proc)
     return imgs_proc
 
+def rescale_contrast(
+    imgs,
+    low=2.0,
+    high=98.0,
+    convert_to_16bit=True,
+    convert_to_8bit=False,
+):
+    """Adjust contrast by rescaling and clipping image intensities.
+    ----------
+    Parameters
+    ----------
+    imgs : numpy.ndarray
+        3D NumPy array representing stack of 2D images (N x Height x Width)
+    low : float, optional
+        Low percentile to which image will be rescaled, by default 2.0
+    high : float, optional
+        High percentile to which image will be rescaled, by default 98.0
+    convert_to_16bit : bool, optional
+        If True, convert to 16-bit image. Defaults to True.
+    convert_to_8bit : bool, optional
+        If True, convert to 8-bit image. Good for saving GIFs.
+        Defaults to False.
+    -------
+    Returns
+    -------
+    numpy.ndarray
+        3D NumPy array representing stack of rescaled 2D images
+    """
+    # --------------- #
+    # Adjust contrast #
+    # --------------- #
+    print('Adjusting contrast...')
+    # Determine intensity values for low & high percentiles
+    p_low, p_high = np.percentile(imgs, [low, high])
+    # Clip intensities less/greater than these intensities, respectively
+    imgs_adj = np.clip(imgs, p_low, p_high)
+    # Rescale float to [0, 1] so image can be converted to 16-bit
+    imgs_adj = exposure.rescale_intensity(
+        imgs_adj, out_range=(0, 1)
+    )
+    if convert_to_16bit:
+        print('Converting to 16-bit images...')
+        # Convert image to 16-bit
+        imgs_adj = util.img_as_uint(imgs_adj)
+    elif convert_to_8bit:
+        print('Converting to 8-bit images...')
+        # Convert image to 8-bit (good for saving GIFs)
+        imgs_adj = util.img_as_ubyte(imgs_adj)
+    return imgs_adj
+
 def save_points(viewer, layer_name, save_dir_path=None, csv_name=None):
     """Save napari points layer as a CSV.
 
