@@ -1,11 +1,11 @@
 # Standard library imports
 from pathlib import Path
 # Third-party imports
-import imageio as iio
+import imageio.v3 as iio
 import napari
 import numpy as np
 import pandas as pd
-import skimage
+from skimage import exposure, filters, util
 
 
 def load_images(
@@ -24,13 +24,18 @@ def load_images(
     img_dir_path : str or Path
         Path to directory containing images to be loaded.
     start : int, optional
-        Index of image within directory which will be the first image loaded, by default None
+        Index of image within directory which will be the first image loaded,
+        by default None
     stop : int, optional
-        Index of image within directory which will be the last image loaded, by default None
+        Index of image within directory which will be the last image loaded,
+        by default None
     step : int, optional
-        Step size for images that are loaded between start and stop (e.g. 2 would be every other image), by default None
+        Step size for images that are loaded between start and stop
+        (e.g. 2 would be every other image), by default None
     manual_img_nums : array-like, optional
-        List or array of integers that will be returned as the actual image numbers (only used if image directory is already a subset of the images), by default None
+        List or array of integers that will be returned as the actual image
+        numbers (only used if image directory is already a subset of the
+        images), by default None
     file_suffix : str, optional
         File suffix for images located in img_dir_path, by default '.tif'
     convert_to_float : bool, optional
@@ -38,8 +43,9 @@ def load_images(
     -------
     Returns
     -------
-    tuple
-        2-tuple containing np.ndarray of image numbers and N x Height x Width np.ndarray representing images
+    np.ndarray, np.ndarray
+        2-tuple containing np.ndarray of image numbers and
+        N x Height x Width np.ndarray representing images
     ------
     Raises
     ------
@@ -70,65 +76,88 @@ def load_images(
         stop = len(img_fns) - 1
     if step is None:
         step = 1
-    # Image range is partially inclusive, so starting point has to be + 1 to include last image
+    # Image range is partially inclusive, so starting point has to be + 1
+    # to include last image
     img_nums = np.arange(start, stop + 1, step)
     imgs = [iio.imread(img_fns[n]) for n in img_nums]
     if convert_to_float:
-        imgs = [skimage.util.img_as_float(img) for img in imgs]
+        imgs = [util.img_as_float(img) for img in imgs]
     if manual_img_nums is not None:
         img_nums = np.array(manual_img_nums)
     if len(imgs) != len(img_nums):
-        raise ValueError(f'Length of manual_img_nums ({len(manual_img_nums)}) must match number of images loaded ({len(imgs)}).')
+        raise ValueError(
+            f'Length of manual_img_nums ({len(manual_img_nums)}) '
+            f'must match number of images loaded ({len(imgs)}).'
+        )
     imgs = np.stack(imgs)
     return img_nums, imgs
 
-def process_images(
-    imgs,
-    process='div_by_pre'
-):
-    """Process images by dividing by preceeding image, dividing by first image, subtracting preceeding image, or subtracting first image.
-
+def process_images(imgs, method='div_by_pre', file_type='.tif'):
+    """Process images by either dividing by previous image, subtracting
+    previous image, dividing first image, or subtracting first image.
+    ----------
     Parameters
     ----------
-    imgs : np.ndarray
-        N x Height x Width np.ndarray representing images to be processed
-    process : str, optional
-        String corresponding to processing method; must be one of ['div_by_pre', 'div_by_first', 'sub_pre', 'sub_first'], by default 'div_by_pre'
-
+    imgs : numpy.ndarray
+        3D NumPy array representing stack of 2D images (N x Height x Width)
+    method : str, optional
+        Processing method. One of:
+         - 'div_by_pre' : Divide by previous image (default)
+         - 'sub_pre' : Subtract previous image
+         - 'div_by_first' : Divide first image
+         - 'sub_first' : Subtract first image
+    file_type : str, optional
+        File suffix of images in directory, by default '.tif'
+    -------
     Returns
     -------
     np.ndarray
-        N x Height x Width array representing processed images
-
+        3D array of images with dimensions (images, rows, cols)
+    ------
     Raises
     ------
     ValueError
-        If process not in ['div_by_pre', 'div_by_first', 'sub_pre', 'sub_first']
+        Raises ValueError if method not in list above
     """
-    if process == 'sub_pre':
-        processed_imgs = [
-            imgs[n, :, :] - imgs[n - 1, :, :] for n in range(1, imgs.shape[0])
+    # Convert to float before smoothing
+    imgs = util.img_as_float32(imgs)
+    print('Smoothing images...')
+    imgs = filters.gaussian(imgs)
+    imgs_proc = np.zeros_like(imgs)
+    # --------------------- #
+    # Highlight differences #
+    # --------------------- #
+    if method == 'div_by_pre':
+        print('Processing images by dividing previous...')
+        imgs_proc[1:, :, :] = [
+            imgs[i, :, :] / imgs[i - 1, :, :]
+            for i in range(1, imgs.shape[0])
         ]
-        processed_imgs.insert(0, np.zeros_like(processed_imgs[0]))
-    elif process == 'sub_first':
-        processed_imgs = [
-            imgs[n, :, :] - imgs[0, :, :] for n in range(1, imgs.shape[0])
+    elif method == 'sub_pre':
+        print('Processing images by subtracting previous...')
+        imgs_proc[1:, :, :] = [
+            imgs[i, :, :] - imgs[i - 1, :, :]
+            for i in range(1, imgs.shape[0])
         ]
-        processed_imgs.insert(0, np.zeros_like(processed_imgs[0]))
-    elif process == 'div_by_pre':
-        processed_imgs = [
-            imgs[n, :, :] / imgs[n - 1, :, :] for n in range(1, imgs.shape[0])
+    elif method == 'div_by_first':
+        print('Processing images by dividing first...')
+        imgs_proc[1:, :, :] = [
+            imgs[i, :, :] / imgs[0, :, :]
+            for i in range(1, imgs.shape[0])
         ]
-        processed_imgs.insert(0, np.zeros_like(processed_imgs[0]))
-    elif process == 'div_by_first':
-        processed_imgs = [
-            imgs[n, :, :] / imgs[0, :, :] for n in range(1, imgs.shape[0])
+    elif method == 'sub_first':
+        print('Processing images by subtracting first...')
+        imgs_proc[1:, :, :] = [
+            imgs[i, :, :] - imgs[0, :, :]
+            for i in range(1, imgs.shape[0])
         ]
-        processed_imgs.insert(0, np.zeros_like(processed_imgs[0]))
     else:
-        raise ValueError(f"Processing routine {process} not recognized; process must be 'sub_pre', 'sub_first', 'div_by_pre', or 'div_by_first'.")
-    processed_imgs = np.stack(processed_imgs)
-    return processed_imgs
+        raise ValueError(
+            'method must be "div_by_pre", "sub_pre", "div_by_first",'
+            'or "sub_first"'
+        )
+    imgs_proc = np.stack(imgs_proc)
+    return imgs_proc
 
 def save_points(viewer, layer_name, save_dir_path=None, csv_name=None):
     """Save napari points layer as a CSV.
