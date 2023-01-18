@@ -9,12 +9,12 @@ import skimage
 
 
 def load_images(
-    img_dir_path, 
-    start=None, 
-    stop=None, 
-    step=None, 
-    manual_img_nums=None, 
-    file_suffix='.tif', 
+    img_dir_path,
+    start=None,
+    stop=None,
+    step=None,
+    manual_img_nums=None,
+    file_suffix='.tif',
     convert_to_float=True
 ):
     """Load images from a directory.
@@ -58,9 +58,9 @@ def load_images(
         )
     img_fns = [fn for fn in img_dir.glob(f'*{file_suffix}')]
     img_fns.sort()
-    if len(img_nums) == 0:
+    if len(img_fns) == 0:
         raise ValueError(
-            f'No images of type {file_suffix} found in directory: '
+            f'No images of type "{file_suffix}" found in directory: '
             f'{img_dir}'
         )
     if start is None:
