@@ -215,11 +215,12 @@ def save_images(
     start=0,
     stop=None,
     step=1,
+    file_suffix='.tif',
     num_offset=0
 ):
     """Save 3D array of images as directory of 2D images, especially
     after processing.
-
+    ----------
     Parameters
     ----------
     save_dir_path : str or Path
@@ -235,10 +236,12 @@ def save_images(
         stop saving at end of array. Defaults to None.
     step : int, optional
         Step size between saved images, by default 1 (every image)
+    file_suffix : str, optional
+        Image type as which images will be saved. Defaults to '.tif'
     num_offset : int, optional
         Additional offset for image index when saving. Iterating index will
         be added to start to become name of saved images.
-
+    ------
     Raises
     ------
     ValueError
@@ -247,22 +250,27 @@ def save_images(
     save_dir_path = Path(save_dir_path)
     if save_dir_path.exists():
         raise ValueError(
-            'Directory already exists. Delete directory or change save_dir_path'
+            'Directory already exists. Delete directory or change '
+            'save_dir_path'
         )
     else:
         save_dir_path.mkdir(parents=True)
     if stop is None:
         stop = imgs.shape[0]
+    if not file_suffix.startswith('.'):
+        file_suffix = f'.{file_suffix}'
     print('Saving images...')
+    n_imgs = 0
     for i in range(start, stop, step):
         img = imgs[i, :, :]
         # Save image with number adjusted by start offset and leading zeros
         # corresponding to length of stopping image number
         save_path = save_dir_path / (
-            f'{str(i + num_offset).zfill(len(str(stop)))}.tif'
+            f'{str(i + num_offset).zfill(len(str(stop)))}{file_suffix}'
         )
         iio.imwrite(save_path, img)
-    print(f'{i - start + num_offset} image(s) saved to:')
+        n_imgs += 1
+    print(f'{n_imgs} image(s) saved to:')
     print(save_dir_path.absolute())
 
 def save_points(viewer, layer_name, save_dir_path=None, csv_name=None):
