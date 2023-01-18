@@ -18,7 +18,7 @@ def load_images(
     convert_to_float=True
 ):
     """Load images from a directory.
-
+    ----------
     Parameters
     ----------
     img_dir_path : str or Path
@@ -35,20 +35,34 @@ def load_images(
         File suffix for images located in img_dir_path, by default '.tif'
     convert_to_float : bool, optional
         If True, convert images to floating point images, by default True
-
+    -------
     Returns
     -------
     tuple
         2-tuple containing np.ndarray of image numbers and N x Height x Width np.ndarray representing images
-
+    ------
     Raises
     ------
+    ValueError
+        If img_dir directory does not exist.
+    ValueError
+        If img_dir directory has no images of file_suffix type.
     ValueError
         If len(manual_img_nums) doesn't match number of loaded images
     """
     img_dir = Path(img_dir_path)
+    if not img_dir.is_dir():
+        raise ValueError(
+            f'Directory not found: '
+            f'{img_dir}'
+        )
     img_fns = [fn for fn in img_dir.glob(f'*{file_suffix}')]
     img_fns.sort()
+    if len(img_nums) == 0:
+        raise ValueError(
+            f'No images of type {file_suffix} found in directory: '
+            f'{img_dir}'
+        )
     if start is None:
         start = 0
     if stop is None:
